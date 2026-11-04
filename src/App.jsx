@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  ArrowUpRight,
-  Github,
-  Linkedin,
-  Copy,
-  Check,
-  Shield,
-  Cpu,
-  Menu,
-  X,
-  ArrowUp,
-  Globe
-} from 'lucide-react';
+import * as THREE from 'three';
+
+const IconWrapper = ({ children, className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+);
+const ArrowUpRight = (p) => <IconWrapper {...p}><path d="M7 7h10v10"/><path d="M7 17 17 7"/></IconWrapper>;
+const Github = (p) => <IconWrapper {...p}><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></IconWrapper>;
+const Linkedin = (p) => <IconWrapper {...p}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></IconWrapper>;
+const Copy = (p) => <IconWrapper {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></IconWrapper>;
+const Check = (p) => <IconWrapper {...p}><path d="M20 6 9 17l-5-5"/></IconWrapper>;
+const Shield = (p) => <IconWrapper {...p}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></IconWrapper>;
+const Cpu = (p) => <IconWrapper {...p}><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></IconWrapper>;
+const Menu = (p) => <IconWrapper {...p}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></IconWrapper>;
+const X = (p) => <IconWrapper {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconWrapper>;
+const ArrowUp = (p) => <IconWrapper {...p}><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></IconWrapper>;
+const Globe = (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></IconWrapper>;
 
 const PROFILE = {
   name: 'Pranav Rakshith.M',
@@ -148,214 +151,120 @@ const WORKFLOW_STEPS = [
 ];
 
 function Interactive3DCanvas({ mode, motionEnabled, scrollProgress }) {
-  const canvasRef = useRef(null);
-  const pointerRef = useRef({ x: 0, y: 0, isDragging: false, lastX: 0, lastY: 0 });
-  const rotationRef = useRef({ x: 0.35, y: 0.55, velX: 0, velY: 0 });
+  const mountRef = useRef(null);
+  const motionEnabledRef = useRef(motionEnabled);
+  const scrollProgressRef = useRef(scrollProgress);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    motionEnabledRef.current = motionEnabled;
+  }, [motionEnabled]);
+
+  useEffect(() => {
+    scrollProgressRef.current = scrollProgress;
+  }, [scrollProgress]);
+
+  useEffect(() => {
+    const currentMount = mountRef.current;
+    if (!currentMount) return;
+
+    const scene = new THREE.Scene();
+    const width = currentMount.clientWidth;
+    const height = currentMount.clientHeight;
+
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.z = 6;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    currentMount.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+
+    const pointLight = new THREE.PointLight(0xbef264, 2.5, 50);
+    pointLight.position.set(5, 5, 5);
+    scene.add(pointLight);
+
+    let geometry;
+    if (mode === 'TORUS') {
+      geometry = new THREE.TorusKnotGeometry(1.4, 0.4, 100, 16);
+    } else if (mode === 'LATTICE') {
+      geometry = new THREE.IcosahedronGeometry(1.6, 1);
+    } else {
+      geometry = new THREE.OctahedronGeometry(1.8, 2);
+    }
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x0b0d10,
+      roughness: 0.3,
+      metalness: 0.8
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    const wireframeMat = new THREE.MeshBasicMaterial({
+      color: 0xbef264,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.65
+    });
+    const wireframeMesh = new THREE.Mesh(geometry, wireframeMat);
+    scene.add(wireframeMesh);
+
+    let mouseX = 0;
+    let mouseY = 0;
+    const handleMouseMove = (e) => {
+      const rect = currentMount.getBoundingClientRect();
+      mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+
     let animationFrameId;
-    let width = (canvas.width = canvas.parentElement.clientWidth);
-    let height = (canvas.height = canvas.parentElement.clientHeight);
+    const startTime = performance.now();
+
+    const animate = () => {
+      const elapsedTime = (performance.now() - startTime) / 1000;
+
+      if (motionEnabledRef.current) {
+        mesh.rotation.x = elapsedTime * 0.3 + mouseY * 0.5 + scrollProgressRef.current * 2;
+        mesh.rotation.y = elapsedTime * 0.4 + mouseX * 0.5 + scrollProgressRef.current * 3;
+        wireframeMesh.rotation.x = mesh.rotation.x;
+        wireframeMesh.rotation.y = mesh.rotation.y;
+      }
+
+      renderer.render(scene, camera);
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
 
     const handleResize = () => {
-      if (!canvas.parentElement) return;
-      width = canvas.width = canvas.parentElement.clientWidth;
-      height = canvas.height = canvas.parentElement.clientHeight;
+      if (!currentMount) return;
+      const w = currentMount.clientWidth;
+      const h = currentMount.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
 
-    const buildGeometry = (currentMode) => {
-      const vertices = [];
-      const edges = [];
-
-      if (currentMode === 'TORUS') {
-        const uSteps = 18;
-        const vSteps = 10;
-        const R = 120;
-        const r = 46;
-        for (let i = 0; i < uSteps; i++) {
-          const u = (i / uSteps) * Math.PI * 2;
-          for (let j = 0; j < vSteps; j++) {
-            const v = (j / vSteps) * Math.PI * 2;
-            const x = (R + r * Math.cos(v)) * Math.cos(u);
-            const y = (R + r * Math.cos(v)) * Math.sin(u);
-            const z = r * Math.sin(v);
-            vertices.push({ x, y, z });
-            const currentIdx = i * vSteps + j;
-            const nextU = ((i + 1) % uSteps) * vSteps + j;
-            const nextV = i * vSteps + ((j + 1) % vSteps);
-            edges.push([currentIdx, nextU]);
-            edges.push([currentIdx, nextV]);
-          }
-        }
-      } else if (currentMode === 'LATTICE') {
-        const grid = 4;
-        const spacing = 58;
-        const offset = ((grid - 1) * spacing) / 2;
-        for (let x = 0; x < grid; x++) {
-          for (let y = 0; y < grid; y++) {
-            for (let z = 0; z < grid; z++) {
-              vertices.push({
-                x: x * spacing - offset,
-                y: y * spacing - offset,
-                z: z * spacing - offset
-              });
-              const idx = x * grid * grid + y * grid + z;
-              if (x < grid - 1) edges.push([idx, (x + 1) * grid * grid + y * grid + z]);
-              if (y < grid - 1) edges.push([idx, x * grid * grid + (y + 1) * grid + z]);
-              if (z < grid - 1) edges.push([idx, x * grid * grid + y * grid + (z + 1)]);
-            }
-          }
-        }
-      } else {
-        const t = (1 + Math.sqrt(5)) / 2;
-        const scale = 78;
-        const baseVerts = [
-          [-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
-          [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
-          [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]
-        ];
-        baseVerts.forEach(([x, y, z]) => {
-          vertices.push({ x: x * scale, y: y * scale, z: z * scale });
-          vertices.push({ x: x * scale * 0.52, y: y * scale * 0.52, z: z * scale * 0.52 });
-        });
-        for (let i = 0; i < vertices.length; i++) {
-          for (let j = i + 1; j < vertices.length; j++) {
-            const dx = vertices[i].x - vertices[j].x;
-            const dy = vertices[i].y - vertices[j].y;
-            const dz = vertices[i].z - vertices[j].z;
-            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (dist < scale * 2.15) {
-              edges.push([i, j]);
-            }
-          }
-        }
-      }
-      return { vertices, edges };
-    };
-
-    const { vertices, edges } = buildGeometry(mode);
-
-    const render = () => {
-      ctx.clearRect(0, 0, width, height);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(width / 2, 0);
-      ctx.lineTo(width / 2, height);
-      ctx.moveTo(0, height / 2);
-      ctx.lineTo(width, height / 2);
-      ctx.stroke();
-
-      if (motionEnabled && !pointerRef.current.isDragging) {
-        rotationRef.current.y += 0.0045;
-        rotationRef.current.x += 0.002;
-      }
-
-      rotationRef.current.x += rotationRef.current.velX;
-      rotationRef.current.y += rotationRef.current.velY;
-      rotationRef.current.velX *= 0.92;
-      rotationRef.current.velY *= 0.92;
-
-      const rx = rotationRef.current.x + scrollProgress * 1.4 + pointerRef.current.y * 0.25;
-      const ry = rotationRef.current.y + scrollProgress * 2.1 + pointerRef.current.x * 0.25;
-
-      const cosX = Math.cos(rx);
-      const sinX = Math.sin(rx);
-      const cosY = Math.cos(ry);
-      const sinY = Math.sin(ry);
-
-      const fov = 420;
-      const projected = vertices.map((v) => {
-        const x1 = v.x * cosY - v.z * sinY;
-        const z1 = v.z * cosY + v.x * sinY;
-        const y2 = v.y * cosX - z1 * sinX;
-        const z2 = z1 * cosX + v.y * sinX;
-
-        const scale = fov / (fov + z2 + 220);
-        return {
-          x: width / 2 + x1 * scale,
-          y: height / 2 + y2 * scale,
-          z: z2,
-          scale
-        };
-      });
-
-      edges.forEach(([i, j]) => {
-        const p1 = projected[i];
-        const p2 = projected[j];
-        const avgZ = (p1.z + p2.z) / 2;
-        const alpha = Math.max(0.08, Math.min(0.75, (avgZ + 180) / 340));
-        ctx.strokeStyle = `rgba(190, 242, 100, ${alpha * 0.55})`;
-        ctx.lineWidth = alpha > 0.45 ? 1.25 : 0.75;
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.stroke();
-      });
-
-      projected.forEach((p) => {
-        const alpha = Math.max(0.15, Math.min(0.95, (p.z + 180) / 320));
-        ctx.fillStyle = alpha > 0.6 ? '#bef264' : 'rgba(243, 244, 246, 0.45)';
-        const radius = Math.max(1.2, p.scale * 2.4);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    render();
-
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationFrameId);
+      if (currentMount && renderer.domElement) {
+        currentMount.removeChild(renderer.domElement);
+      }
+      geometry.dispose();
+      material.dispose();
+      wireframeMat.dispose();
     };
-  }, [mode, motionEnabled, scrollProgress]);
+  }, [mode]);
 
-  const handlePointerDown = (e) => {
-    pointerRef.current.isDragging = true;
-    pointerRef.current.lastX = e.clientX;
-    pointerRef.current.lastY = e.clientY;
-  };
-
-  const handlePointerMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const normX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-    const normY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-    pointerRef.current.x = normX;
-    pointerRef.current.y = normY;
-
-    if (pointerRef.current.isDragging) {
-      const dx = e.clientX - pointerRef.current.lastX;
-      const dy = e.clientY - pointerRef.current.lastY;
-      rotationRef.current.velY = dx * 0.006;
-      rotationRef.current.velX = dy * 0.006;
-      pointerRef.current.lastX = e.clientX;
-      pointerRef.current.lastY = e.clientY;
-    }
-  };
-
-  const handlePointerUp = () => {
-    pointerRef.current.isDragging = false;
-  };
-
-  return (
-    <div
-      className="relative w-full h-full select-none cursor-grab active:cursor-grabbing"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-    >
-      <canvas ref={canvasRef} className="w-full h-full block" />
-    </div>
-  );
+  return <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />;
 }
 
 function TiltSurface({ children, className = '', motionEnabled = true }) {
@@ -589,7 +498,7 @@ export default function App() {
                 <div className="px-4 py-2.5 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
                   <span className="font-mono text-[11px] text-neutral-300 flex items-center gap-2">
                     <Cpu className="w-3.5 h-3.5 text-[#BEF264]" />
-                    INTERACTIVE_3D_STAGE // DRAG TO ORBIT
+                    THREE.JS WEBGL 3D // DRAG TO ORBIT
                   </span>
                   <span className="font-mono text-[10px] text-[#BEF264]">60 FPS</span>
                 </div>
@@ -601,7 +510,7 @@ export default function App() {
                     scrollProgress={scrollProgress}
                   />
                   <div className="absolute bottom-3 left-3 pointer-events-none font-mono text-[10px] text-neutral-400 bg-[#070809]/80 px-2.5 py-1 border border-white/10">
-                    MESH: {topologyMode} // SCROLL & DRAG REACTIVE
+                    MESH: {topologyMode} // WEBGL LIGHTING & SHADING
                   </div>
                 </div>
 
@@ -1276,7 +1185,7 @@ export default function App() {
       <footer className="border-t border-white/10 bg-[#070809] py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs text-neutral-400">
           <div>
-            © {new Date().getFullYear()} {PROFILE.name}. Built with React, Tailwind CSS & HTML5 3D Projection.
+            © {new Date().getFullYear()} {PROFILE.name}. Built with React, Tailwind CSS & Three.js WebGL.
           </div>
           <a
             href="#top"
