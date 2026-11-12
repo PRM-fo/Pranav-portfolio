@@ -160,7 +160,7 @@ export default function App() {
         }}
       />
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#070809]/85 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#070809]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <a href="#top" className="flex items-center gap-3 group focus:outline-none">
             <span className="w-8 h-8 border border-[#BEF264]/60 bg-[#BEF264]/10 flex items-center justify-center font-mono text-xs font-semibold text-[#BEF264] group-hover:bg-[#BEF264] group-hover:text-[#070809] transition-colors">
